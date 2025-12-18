@@ -2,35 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PDF eBook Reader</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responsive PDF eBook Reader</title>
 
-<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
   body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    text-align: center;
     margin: 0;
-    padding: 10px;
+    font-family: Arial, sans-serif;
+    background: #f3f3f3;
+    text-align: center;
   }
 
   h2 {
-    margin-bottom: 10px;
+    margin: 10px 0;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 10px;
   }
 
   .reader {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
   }
 
   canvas {
-    background: white;
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    background: #fff;
     border: 1px solid #333;
-    max-width: 100%;
   }
 
   button {
@@ -40,33 +46,51 @@
   }
 
   .info {
-    margin-top: 10px;
+    margin-top: 8px;
     font-size: 14px;
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .reader {
+      flex-direction: column;
+    }
+
+    button {
+      width: 100%;
+      max-width: 200px;
+    }
   }
 </style>
 </head>
 
 <body>
 
-<h2>📘 PDF eBook Reader</h2>
+<div class="container">
+  <h2>📘 PDF eBook Reader</h2>
 
-<div class="reader">
-  <button onclick="prevPage()">⬅</button>
-  <canvas id="pdfCanvas"></canvas>
-  <button onclick="nextPage()">➡</button>
-</div>
+  <div class="reader">
+    <button onclick="prevPage()">⬅ Prev</button>
+    <canvas id="pdfCanvas"></canvas>
+    <button onclick="nextPage()">Next ➡</button>
+  </div>
 
-<div class="info">
-  Page <span id="pageNum">1</span> / <span id="pageCount">0</span>
+  <div class="info">
+    Page <span id="pageNum">1</span> / <span id="pageCount">0</span>
+  </div>
 </div>
 
 <script>
   const pdfUrl = "sample.pdf";
-
   let pdfDoc = null;
   let pageNumber = 1;
+
   const canvas = document.getElementById("pdfCanvas");
   const ctx = canvas.getContext("2d");
+
+  function getScale() {
+    return window.innerWidth < 600 ? 1.2 : 1.6;
+  }
 
   pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
     pdfDoc = pdf;
@@ -76,7 +100,7 @@
 
   function renderPage(num) {
     pdfDoc.getPage(num).then(page => {
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewport = page.getViewport({ scale: getScale() });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -100,6 +124,10 @@
     pageNumber--;
     renderPage(pageNumber);
   }
+
+  window.addEventListener("resize", () => {
+    renderPage(pageNumber);
+  });
 </script>
 
 </body>
