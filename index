@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PDF eBook Reader</title>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    text-align: center;
+    margin: 0;
+    padding: 10px;
+  }
+
+  h2 {
+    margin-bottom: 10px;
+  }
+
+  .reader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+
+  canvas {
+    background: white;
+    border: 1px solid #333;
+    max-width: 100%;
+  }
+
+  button {
+    padding: 10px 14px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .info {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>📘 PDF eBook Reader</h2>
+
+<div class="reader">
+  <button onclick="prevPage()">⬅</button>
+  <canvas id="pdfCanvas"></canvas>
+  <button onclick="nextPage()">➡</button>
+</div>
+
+<div class="info">
+  Page <span id="pageNum">1</span> / <span id="pageCount">0</span>
+</div>
+
+<script>
+  const pdfUrl = "sample.pdf";
+
+  let pdfDoc = null;
+  let pageNumber = 1;
+  const canvas = document.getElementById("pdfCanvas");
+  const ctx = canvas.getContext("2d");
+
+  pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+    pdfDoc = pdf;
+    document.getElementById("pageCount").innerText = pdf.numPages;
+    renderPage(pageNumber);
+  });
+
+  function renderPage(num) {
+    pdfDoc.getPage(num).then(page => {
+      const viewport = page.getViewport({ scale: 1.5 });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      });
+
+      document.getElementById("pageNum").innerText = num;
+    });
+  }
+
+  function nextPage() {
+    if (pageNumber >= pdfDoc.numPages) return;
+    pageNumber++;
+    renderPage(pageNumber);
+  }
+
+  function prevPage() {
+    if (pageNumber <= 1) return;
+    pageNumber--;
+    renderPage(pageNumber);
+  }
+</script>
+
+</body>
+</html>
