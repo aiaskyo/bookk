@@ -5,88 +5,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Library</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
 <style>
   body {
     margin: 0;
     font-family: Georgia, serif;
-    background: #1c1c1c;
+    background: linear-gradient(180deg, #111, #1c1c1c);
     color: #fff;
   }
 
-  h2 {
+  header {
     text-align: center;
-    padding: 15px;
-    font-weight: normal;
+    padding: 16px;
+    font-size: 20px;
+    letter-spacing: 1px;
   }
 
   .library {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-    padding: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 18px;
+    padding: 18px;
   }
 
   .book {
-    background: #6b4632;
-    border-radius: 6px;
+    background: #2a2a2a;
+    border-radius: 10px;
     padding: 10px;
     cursor: pointer;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-    transition: transform 0.2s;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    transition: transform 0.25s, box-shadow 0.25s;
   }
 
   .book:hover {
-    transform: scale(1.05);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.9);
   }
 
   .cover {
-    background: #fffaf0;
-    height: 180px;
-    border-radius: 4px;
+    background: #000;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #333;
-    text-align: center;
-    font-size: 14px;
-    padding: 8px;
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
   }
 
   .title {
     margin-top: 8px;
     font-size: 14px;
     text-align: center;
+    opacity: 0.9;
   }
 </style>
 </head>
 
 <body>
 
-<h2>📚 My PDF Library</h2>
+<header>📚 My PDF Library</header>
 
-<div class="library">
-
-  <div class="book" onclick="openBook('book1.pdf','Book One')">
-    <div class="cover">Book One</div>
-    <div class="title">Book One</div>
-  </div>
-
-  <div class="book" onclick="openBook('book2.pdf','Book Two')">
-    <div class="cover">Book Two</div>
-    <div class="title">Book Two</div>
-  </div>
-
-  <div class="book" onclick="openBook('book3.pdf','Book Three')">
-    <div class="cover">Book Three</div>
-    <div class="title">Book Three</div>
-  </div>
-
-</div>
+<div class="library" id="library"></div>
 
 <script>
-  function openBook(pdf, title) {
-    window.location.href =
-      `reader.html?pdf=${pdf}&title=${encodeURIComponent(title)}`;
+  const books = [
+    { file: "book1.pdf", title: "Book One" },
+    { file: "book2.pdf", title: "Book Two" },
+    { file: "book3.pdf", title: "Book Three" }
+  ];
+
+  const library = document.getElementById("library");
+
+  books.forEach((b, i) => {
+    const div = document.createElement("div");
+    div.className = "book";
+    div.innerHTML = `
+      <div class="cover"><canvas id="c${i}"></canvas></div>
+      <div class="title">${b.title}</div>
+    `;
+    div.onclick = () => {
+      window.location.href =
+        `reader.html?pdf=${b.file}&title=${encodeURIComponent(b.title)}`;
+    };
+    library.appendChild(div);
+
+    renderCover("pdfs/" + b.file, document.getElementById("c" + i));
+  });
+
+  function renderCover(url, canvas) {
+    pdfjsLib.getDocument(url).promise.then(pdf => {
+      pdf.getPage(1).then(page => {
+        const viewport = page.getViewport({ scale: 0.6 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        page.render({
+          canvasContext: canvas.getContext("2d"),
+          viewport: viewport
+        });
+      });
+    });
   }
 </script>
 
