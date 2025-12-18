@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reader</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    background: #111;
+    font-family: Georgia, serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 900px;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .top {
+    color: #ddd;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .book-shell {
+    background: #6a432f;
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .book {
+    display: flex;
+    background: #d6c2a3;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .page {
+    width: 50%;
+    background: #fffaf2;
+    padding: 10px;
+  }
+
+  .spine {
+    width: 18px;
+    background: linear-gradient(to right,#3a2418,#6b4632,#3a2418);
+  }
+
+  canvas {
+    width: 100%;
+    height: auto;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  button {
+    background: #3a2418;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 720px) {
+    .book {
+      flex-direction: column;
+    }
+    .page {
+      width: 100%;
+    }
+    .spine {
+      width: 100%;
+      height: 14px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <div class="top">
+    <h3 id="title"></h3>
+    Page <span id="pageNum">1</span> / <span id="pageCount">0</span>
+  </div>
+
+  <div class="book-shell">
+    <div class="book" id="book">
+      <div class="page"><canvas id="left"></canvas></div>
+      <div class="spine"></div>
+      <div class="page"><canvas id="right"></canvas></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="prev()">◀ Prev</button>
+    <button onclick="next()">Next ▶</button>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const pdfFile = params.get("pdf");
+  const title = params.get("title");
+
+  document.getElementById("title").innerText = title;
+
+  const url = "pdfs/" + pdfFile;
+  let pdfDoc = null;
+  let page = 1;
+
+  const left = document.getElementById("left");
+  const right = document.getElementById("right");
+
+  function scale() {
+    return window.innerWidth < 720 ? 1.1 : 1.35;
+  }
+
+  pdfjsLib.getDocument(url).promise.then(pdf => {
+    pdfDoc = pdf;
+    document.getElementById("pageCount").innerText = pdf.numPages;
+    render();
+  });
+
+  function render() {
+    draw(page, left);
+    if (page + 1 <= pdfDoc.numPages) draw(page + 1, right);
+    document.getElementById("pageNum").innerText = page;
+  }
+
+  function draw(num, canvas) {
+    pdfDoc.getPage(num).then(p => {
+      const v = p.getViewport({ scale: scale() });
+      canvas.width = v.width;
+      canvas.height = v.height;
+      p.render({ canvasContext: canvas.getContext("2d"), viewport: v });
+    });
+  }
+
+  function next() {
+    if (page + 1 >= pdfDoc.numPages) return;
+    page += 2;
+    render();
+  }
+
+  function prev() {
+    if (page <= 1) return;
+    page -= 2;
+    render();
+  }
+</script>
+
+</body>
+</html>
