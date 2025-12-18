@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Book Style PDF Reader</title>
+<title>Real Book PDF Reader</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <style>
   body {
     margin: 0;
-    background: #2b2b2b;
+    background: #1f1f1f;
     font-family: Georgia, serif;
     display: flex;
     justify-content: center;
@@ -18,27 +18,32 @@
     min-height: 100vh;
   }
 
+  .book-wrapper {
+    background: #5b3a29;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+  }
+
   .book {
-    background: #8b5e3c;
-    padding: 18px;
-    border-radius: 6px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    display: flex;
+    position: relative;
+    background: #d8c4a0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .spine {
+    width: 18px;
+    background: linear-gradient(to right, #3b2417, #6b4632, #3b2417);
   }
 
   .page {
     background: #fffaf0;
-    width: min(90vw, 600px);
-    height: min(85vh, 800px);
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
-    transform-origin: left;
-    transition: transform 0.6s ease;
-  }
-
-  .page.flip {
-    transform: rotateY(-180deg);
+    padding: 10px;
+    width: min(45vw, 400px);
+    height: min(80vh, 700px);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.15);
   }
 
   canvas {
@@ -53,38 +58,52 @@
   }
 
   button {
-    background: #5a3d2b;
+    background: #3b2417;
     color: white;
     border: none;
     padding: 8px 14px;
     font-size: 14px;
-    cursor: pointer;
     border-radius: 4px;
-  }
-
-  button:active {
-    transform: scale(0.96);
+    cursor: pointer;
   }
 
   .pageNo {
-    color: #fff;
     text-align: center;
-    margin-top: 8px;
-    font-size: 14px;
+    color: #eee;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  @media (max-width: 700px) {
+    .book {
+      flex-direction: column;
+    }
+
+    .spine {
+      height: 14px;
+      width: 100%;
+    }
+
+    .page {
+      width: 90vw;
+      height: auto;
+    }
   }
 </style>
 </head>
 
 <body>
 
-<div class="book">
-  <div id="page" class="page">
-    <canvas id="pdfCanvas"></canvas>
+<div class="book-wrapper">
+  <div class="book" id="book">
+    <div class="page"><canvas id="leftPage"></canvas></div>
+    <div class="spine"></div>
+    <div class="page"><canvas id="rightPage"></canvas></div>
   </div>
 
   <div class="controls">
-    <button onclick="prevPage()">◀ Prev</button>
-    <button onclick="nextPage()">Next ▶</button>
+    <button onclick="prev()">◀ Prev</button>
+    <button onclick="next()">Next ▶</button>
   </div>
 
   <div class="pageNo">
@@ -93,67 +112,70 @@
 </div>
 
 <script>
-  const pdfUrl = "sample.pdf";
+  const url = "sample.pdf";
 
   let pdfDoc = null;
-  let pageNumber = 1;
+  let pageNum = 1;
 
-  const canvas = document.getElementById("pdfCanvas");
-  const ctx = canvas.getContext("2d");
-  const pageDiv = document.getElementById("page");
+  const leftCanvas = document.getElementById("leftPage");
+  const rightCanvas = document.getElementById("rightPage");
 
-  function scaleByScreen() {
-    return window.innerWidth < 600 ? 1.2 : 1.6;
+  function scale() {
+    return window.innerWidth < 700 ? 1.2 : 1.4;
   }
 
-  pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+  pdfjsLib.getDocument(url).promise.then(pdf => {
     pdfDoc = pdf;
     document.getElementById("pageCount").innerText = pdf.numPages;
-    renderPage(pageNumber);
+    render();
   });
 
-  function renderPage(num) {
+  function render() {
+    renderPage(pageNum, leftCanvas);
+
+    if (pageNum + 1 <= pdfDoc.numPages) {
+      renderPage(pageNum + 1, rightCanvas);
+    } else {
+      rightCanvas.getContext("2d").clearRect(0,0,rightCanvas.width,rightCanvas.height);
+    }
+
+    document.getElementById("pageNum").innerText = pageNum;
+  }
+
+  function renderPage(num, canvas) {
     pdfDoc.getPage(num).then(page => {
-      const viewport = page.getViewport({ scale: scaleByScreen() });
+      const viewport = page.getViewport({ scale: scale() });
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-
-      page.render({
-        canvasContext: ctx,
-        viewport: viewport
-      });
-
-      document.getElementById("pageNum").innerText = num;
+      page.render({ canvasContext: canvas.getContext("2d"), viewport });
     });
   }
 
-  function nextPage() {
-    if (pageNumber >= pdfDoc.numPages) return;
-    flip(() => {
-      pageNumber++;
-      renderPage(pageNumber);
-    });
+  function next() {
+    if (pageNum + 1 >= pdfDoc.numPages) return;
+    pageNum += 2;
+    render();
   }
 
-  function prevPage() {
-    if (pageNumber <= 1) return;
-    flip(() => {
-      pageNumber--;
-      renderPage(pageNumber);
-    });
+  function prev() {
+    if (pageNum <= 1) return;
+    pageNum -= 2;
+    render();
   }
 
-  function flip(callback) {
-    pageDiv.classList.add("flip");
-    setTimeout(() => {
-      callback();
-      pageDiv.classList.remove("flip");
-    }, 600);
-  }
-
-  window.addEventListener("resize", () => {
-    renderPage(pageNumber);
+  // Mobile swipe
+  let startX = 0;
+  document.getElementById("book").addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
   });
+
+  document.getElementById("book").addEventListener("touchend", e => {
+    let endX = e.changedTouches[0].clientX;
+    if (startX - endX > 50) next();
+    if (endX - startX > 50) prev();
+  });
+
+  window.addEventListener("resize", render);
 </script>
 
 </body>
